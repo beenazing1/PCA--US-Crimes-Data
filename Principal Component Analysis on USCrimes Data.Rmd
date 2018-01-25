@@ -1,0 +1,65 @@
+---
+title: PRINCIPAL COMPONENT ANALYSIS ON USCRIMES DATA
+output: word_document
+Authors: Beenapreet
+---
+
+```{r setup, include=FALSE}
+
+#knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r 1}
+#setwd("C:/Users/beena/Downloads/Analytics Modelling")
+
+uscrime<-read.table("uscrime.txt",header=TRUE)
+View(uscrime)
+```
+
+Applying PCA to US Crimes dataset
+```{r 2}
+uscrime_pca<- prcomp(uscrime[1:15],scale = TRUE)
+#### Viewing the First 4 principal components
+head(uscrime_pca$x[,1:4])
+summary(uscrime_pca)
+```
+
+```{r 3}
+plot(uscrime_pca,type="line")
+```
+
+From the summary  and plot we can see that the first 4 principle componensts explain most of the variability of the data, hence we use the first 4 components to create our model
+```{r 4}
+### Extracting the first 4 principle components
+PCA_uscrimes<-as.data.frame(cbind(uscrime_pca$x[,1],uscrime_pca$x[,2],uscrime_pca$x[,3],uscrime_pca$x[,4],uscrime$Crime))
+#### linear regression model with principal components
+model_pca<-lm(V5~.,data=PCA_uscrimes )
+summary(model_pca)
+
+```
+Now we calculate the coefficients in terms of the original variables in our model using the eigen vectors from PCA. We iterate across the top 4 PCA coefficients and multiply the beta coefficients obtained from the linear regression model with each of the top 4 PCA values. 
+```{r 5}
+transformed_coeff<-c()
+for(x in 1:(ncol(uscrime)-1)) {
+  iter <- 0
+  
+  
+  for (i in 1:4) {
+    
+    iter <- iter + model_pca$coefficients[i+1]*uscrime_pca$rotation[x,i]
+    
+  }
+  
+  
+  transformed_coeff <- rbind(transformed_coeff, c(colnames(uscrime)[x],iter))
+}
+transformed_coeff <- as.data.frame(transformed_coeff)
+colnames(transformed_coeff) <- c("Variable", "PCA Coefficient")
+print(as.data.frame(transformed_coeff))
+```
+
+
+Explanation:
+
+We get a R^2 value of 30.91% from the multiple regression model using 4 Principle components whereas from the previous question we get R^2 value of 76.59%. We see that the PCA model with 4 components does not explain as much of the variability hence R^2 is low as compared to the Multiple Linear regression model of the previous question.
